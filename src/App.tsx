@@ -13,7 +13,37 @@ import './index.css';
 // ProtectedRoute component to require authentication
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { isAuthenticated, isLoading } = useAuth0();
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '80vh'
+      }}>
+        <div style={{
+          border: '8px solid #f3f3f3',
+          borderTop: '8px solid #3498db',
+          borderRadius: '50%',
+          width: '60px',
+          height: '60px',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <style>
+          {`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+        <div style={{ marginTop: 20, fontSize: 18, color: '#3498db' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
