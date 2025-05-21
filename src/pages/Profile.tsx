@@ -1,4 +1,4 @@
-import React, { useMemo, useState, ChangeEvent } from 'react';
+import React, { useMemo, useState, useEffect, ChangeEvent } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useTaskContext } from '../context/TaskContext';
 import GamificationPanel from '../components/GamificationPanel';
@@ -7,6 +7,32 @@ import { FaUserCircle, FaEnvelope, FaSignOutAlt, FaTasks, FaTrophy, FaClock, FaF
 
 function daysBetween(a: string, b: string) {
   return Math.floor((new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+const LOCAL_STORAGE_KEY = 'profileImages';
+
+function getStoredProfileImage(email: string | undefined): string | null {
+  if (!email) return null;
+  try {
+    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    return parsed[email] || null;
+  } catch {
+    return null;
+  }
+}
+
+function setStoredProfileImage(email: string | undefined, image: string) {
+  if (!email) return;
+  try {
+    const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const parsed = data ? JSON.parse(data) : {};
+    parsed[email] = image;
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // ignore
+  }
 }
 
 const Profile: React.FC = () => {
@@ -19,6 +45,22 @@ const Profile: React.FC = () => {
   const [editPicture, setEditPicture] = useState(user?.picture || '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>(user?.picture || '');
+
+  // Load stored image on mount or user change
+  useEffect(() => {
+    if (user?.email) {
+      const stored = getStoredProfileImage(user.email);
+      if (stored) {
+        setEditPicture(stored);
+        setImagePreview(stored);
+      } else {
+        setEditPicture(user.picture || '');
+        setImagePreview(user.picture || '');
+      }
+      setEditName(user.name || '');
+    }
+    // eslint-disable-next-line
+  }, [user?.email, user?.picture, user?.name]);
 
   const {
     completedCount,
@@ -100,12 +142,16 @@ const Profile: React.FC = () => {
 
   // Simulate saving profile (in real app, call API)
   const handleSave = () => {
-    // Here you would call your backend to update the profile
-    // For now, just update the previewed image/name
+    let finalImage = imagePreview;
     if (imageFile && imagePreview) {
       // In a real app, upload imageFile and get a URL, then setEditPicture(url)
       setEditPicture(imagePreview); // For demo, use base64 preview
+      finalImage = imagePreview;
+    } else if (editPicture) {
+      finalImage = editPicture;
     }
+    setStoredProfileImage(user.email, finalImage);
+    setImagePreview(finalImage);
     setShowEdit(false);
   };
 
@@ -139,8 +185,10 @@ const Profile: React.FC = () => {
                   style={{ verticalAlign: 'middle' }}
                   onClick={() => {
                     setEditName(user.name || '');
-                    setEditPicture(user.picture || '');
-                    setImagePreview(user.picture || '');
+                    // Use stored image if available
+                    const stored = getStoredProfileImage(user.email);
+                    setEditPicture(stored || user.picture || '');
+                    setImagePreview(stored || user.picture || '');
                     setImageFile(null);
                     setShowEdit(true);
                   }}
