@@ -7,20 +7,41 @@ interface NotificationBellProps {
   onClick: () => void;
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ count, onClick }) => (
-  <OverlayTrigger
-    placement="bottom"
-    overlay={<Tooltip>Notifications</Tooltip>}
-  >
-    <span style={{ cursor: 'pointer', position: 'relative' }} onClick={onClick}>
-      <BsBell size={24} />
-      {count > 0 && (
-        <Badge bg="danger" pill style={{ position: 'absolute', top: 0, right: 0 }}>
-          {count}
-        </Badge>
-      )}
-    </span>
-  </OverlayTrigger>
-);
+function NotificationBell({ count, onClick }: NotificationBellProps) {
+  return (
+    <OverlayTrigger
+      placement="bottom"
+      overlay={<Tooltip id="notification-bell-tooltip">Notifications</Tooltip>}
+    >
+      <span
+        style={{ cursor: 'pointer', position: 'relative', display: 'inline-block' }}
+        onClick={onClick}
+        tabIndex={0}
+        role="button"
+        aria-label="Notifications"
+        onKeyPress={e => {
+          if (e.key === 'Enter' || e.key === ' ') onClick();
+        }}
+      >
+        <BsBell size={24} />
+        {count > 0 && (
+          <Badge
+            bg="danger"
+            pill
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              transform: 'translate(50%,-50%)',
+              fontSize: '0.75em',
+            }}
+          >
+            {count}
+          </Badge>
+        )}
+      </span>
+    </OverlayTrigger>
+  );
+}
 
 export default NotificationBell;
