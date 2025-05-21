@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, ChangeEvent } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useTaskContext } from '../context/TaskContext';
 import GamificationPanel from '../components/GamificationPanel';
-import { Card, Badge, ProgressBar, Row, Col, Button, Container } from 'react-bootstrap';
-import { FaUserCircle, FaEnvelope, FaSignOutAlt, FaTasks, FaTrophy, FaClock, FaFire } from 'react-icons/fa';
+import { Card, Badge, ProgressBar, Row, Col, Button, Container, Form, Modal } from 'react-bootstrap';
+import { FaUserCircle, FaEnvelope, FaSignOutAlt, FaTasks, FaTrophy, FaClock, FaFire, FaEdit, FaSave, FaTimes, FaUpload } from 'react-icons/fa';
 
 function daysBetween(a: string, b: string) {
   return Math.floor((new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24));
@@ -12,6 +12,13 @@ function daysBetween(a: string, b: string) {
 const Profile: React.FC = () => {
   const { user, logout } = useAuth0();
   const { tasks } = useTaskContext();
+
+  // Local state for editing profile
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editPicture, setEditPicture] = useState(user?.picture || '');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>(user?.picture || '');
 
   const {
     completedCount,
@@ -70,16 +77,48 @@ const Profile: React.FC = () => {
 
   if (!user) return null;
 
+  // Handle image file selection
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        setEditPicture(''); // Clear URL if uploading
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle image URL input
+  const handlePictureUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEditPicture(e.target.value);
+    setImageFile(null);
+    setImagePreview(e.target.value);
+  };
+
+  // Simulate saving profile (in real app, call API)
+  const handleSave = () => {
+    // Here you would call your backend to update the profile
+    // For now, just update the previewed image/name
+    if (imageFile && imagePreview) {
+      // In a real app, upload imageFile and get a URL, then setEditPicture(url)
+      setEditPicture(imagePreview); // For demo, use base64 preview
+    }
+    setShowEdit(false);
+  };
+
   return (
     <Container className="py-4" style={{ maxWidth: 800 }}>
       <Card className="shadow-lg border-0 mb-4" style={{ borderRadius: 24 }}>
         <Card.Body>
           <Row className="align-items-center">
             <Col xs={12} md={3} className="text-center mb-3 mb-md-0">
-              {user.picture ? (
+              {imagePreview || user.picture ? (
                 <img
-                  src={user.picture}
-                  alt={user.name}
+                  src={imagePreview || user.picture}
+                  alt={editName || user.name}
                   className="rounded-circle shadow"
                   style={{ width: 110, height: 110, objectFit: 'cover', border: '4px solid #f5e9c8' }}
                 />
@@ -89,10 +128,26 @@ const Profile: React.FC = () => {
             </Col>
             <Col xs={12} md={9}>
               <h2 className="fw-bold mb-1" style={{ letterSpacing: 0.5 }}>
-                {user.name}
+                {editName || user.name}
                 <Badge bg="info" className="ms-2 align-middle" style={{ fontSize: 14 }}>
                   <FaTasks className="me-1" /> {completedCount}/{totalCount} Tasks
                 </Badge>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="ms-2 p-0 align-middle"
+                  style={{ verticalAlign: 'middle' }}
+                  onClick={() => {
+                    setEditName(user.name || '');
+                    setEditPicture(user.picture || '');
+                    setImagePreview(user.picture || '');
+                    setImageFile(null);
+                    setShowEdit(true);
+                  }}
+                  aria-label="Edit Profile"
+                >
+                  <FaEdit />
+                </Button>
               </h2>
               <div className="mb-2 text-muted" style={{ fontSize: 18 }}>
                 <FaEnvelope className="me-2" />
@@ -166,6 +221,67 @@ const Profile: React.FC = () => {
         achievements={['Starter', 'First Streak']}
         points={120}
       />
+
+      {/* Edit Profile Modal */}
+      <Modal show={showEdit} onHide={() => setShowEdit(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Profile</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3" controlId="editName">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Enter your name"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="editPicture">
+              <Form.Label>Profile Picture</Form.Label>
+              <div className="mb-2">
+                <Form.Control
+                  type="text"
+                  value={editPicture}
+                  onChange={handlePictureUrlChange}
+                  placeholder="Paste image URL"
+                  disabled={!!imageFile}
+                />
+              </div>
+              <div className="mb-2">
+                <Form.Label className="d-block">Or upload an image</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  disabled={!!editPicture}
+                />
+                <small className="text-muted">
+                  {editPicture ? 'Clear the URL to enable file upload.' : ''}
+                </small>
+              </div>
+              {imagePreview && (
+                <div className="mt-2 text-center">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: '50%' }}
+                  />
+                </div>
+              )}
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowEdit(false)}>
+            <FaTimes className="me-1" /> Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSave}>
+            <FaSave className="me-1" /> Save
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };
