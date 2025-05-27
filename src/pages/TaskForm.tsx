@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTaskContext } from '../context/TaskContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -25,67 +25,99 @@ const fadeIn = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
+const initialForm: Partial<Task> = {
+  title: '',
+  description: '',
+  category: '',
+  dueDate: '',
+  labels: [],
+  subtasks: [],
+  comments: [],
+};
+
 const TaskForm: React.FC = () => {
   const { tasks, add, update, loading, error } = useTaskContext();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-
   const editing = Boolean(id);
-  const [form, setForm] = useState<Partial<Task>>({
-    title: '',
-    description: '',
-    category: '',
-    dueDate: '',
-    labels: [],
-    subtasks: [],
-    comments: [],
-  });
+
+  // Use refs to avoid stale closures in async
+  const formRef = useRef<Partial<Task>>(initialForm);
+
+  const [form, setForm] = useState<Partial<Task>>(initialForm);
   const [recurring, setRecurring] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [labelInput, setLabelInput] = useState('');
+  const [localError, setLocalError] = useState<string | null>(null);
 
+  // Load task for editing
   useEffect(() => {
     if (editing) {
       const task = tasks.find(t => t.id === id);
-      if (task) setForm(task);
+      if (task) {
+        setForm(task);
+        formRef.current = task;
+        setRecurring((task as any).recurring || '');
+        setFiles((task.attachments as File[]) || []);
+      }
+    } else {
+      setForm(initialForm);
+      formRef.current = initialForm;
+      setRecurring('');
+      setFiles([]);
     }
   }, [editing, id, tasks]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // Keep formRef in sync
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
-  const handleVoice = (text: string) =>
-    setForm(f => ({ ...f, description: (f.description || '') + ' ' + text }));
+  // Handlers
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setForm(prev => ({ ...prev, [name]: value }));
+    },
+    []
+  );
 
-  const handleLabelAdd = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && labelInput.trim()) {
-      e.preventDefault();
-      setForm(f => ({
-        ...f,
-        labels: [...(f.labels || []), labelInput.trim()],
-      }));
-      setLabelInput('');
-    }
-  };
+  const handleVoice = useCallback(
+    (text: string) => setForm(f => ({ ...f, description: (f.description || '') + ' ' + text })),
+    []
+  );
 
-  const handleLabelRemove = (idx: number) => {
+  const handleLabelAdd = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && labelInput.trim()) {
+        e.preventDefault();
+        setForm(f => ({
+          ...f,
+          labels: [...(f.labels || []), labelInput.trim()],
+        }));
+        setLabelInput('');
+      }
+    },
+    [labelInput]
+  );
+
+  const handleLabelRemove = useCallback((idx: number) => {
     setForm(f => ({
       ...f,
       labels: (f.labels || []).filter((_, i) => i !== idx),
     }));
-  };
+  }, []);
 
-  const handleSubtaskToggle = (subtaskId: string) => {
+  const handleSubtaskToggle = useCallback((subtaskId: string) => {
     setForm(f => ({
       ...f,
       subtasks: (f.subtasks || []).map(st =>
         st.id === subtaskId ? { ...st, completed: !st.completed } : st
       ),
     }));
-  };
+  }, []);
 
-  const handleSubtaskAdd = (title: string) => {
+  const handleSubtaskAdd = useCallback((title: string) => {
     setForm(f => ({
       ...f,
       subtasks: [
@@ -93,9 +125,9 @@ const TaskForm: React.FC = () => {
         { id: Date.now().toString(), title, completed: false },
       ],
     }));
-  };
+  }, []);
 
-  const handleCommentAdd = (text: string) => {
+  const handleCommentAdd = useCallback((text: string) => {
     setForm(f => ({
       ...f,
       comments: [
@@ -108,24 +140,55 @@ const TaskForm: React.FC = () => {
         },
       ],
     }));
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title || !form.description) return;
-    const taskData: Task = {
-      ...(form as Task),
-      recurring,
-      attachments: files,
-      userId: 'demo',
-    };
-    if (editing) {
-      await update(taskData);
-    } else {
-      await add(taskData);
+  // Optimized submit handler
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLocalError(null);
+
+      const { title, description } = formRef.current;
+      if (!title || !description) {
+        setLocalError('Title and Description are required.');
+        return;
+      }
+
+      // Only include recurring if your Task type supports it
+      const taskData: Task = {
+        ...(formRef.current as Task),
+        attachments: files,
+        userId: 'demo',
+        ...(recurring ? { recurring } : {}),
+      };
+
+      try {
+        if (editing) {
+          await update(taskData);
+        } else {
+          await add(taskData);
+        }
+        // Refetch tasks or update context if needed
+        navigate('/');
+      } catch (err: any) {
+        setLocalError(err?.message || 'Failed to save task.');
+      }
+    },
+    [add, update, editing, files, recurring, navigate]
+  );
+
+  // Dynamic update after clicking Update Task
+  useEffect(() => {
+    if (!editing) return;
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      setForm(task);
+      formRef.current = task;
+      setRecurring((task as any).recurring || '');
+      setFiles((task.attachments as File[]) || []);
     }
-    navigate('/');
-  };
+    // eslint-disable-next-line
+  }, [tasks, editing, id]);
 
   return (
     <motion.div
@@ -155,9 +218,9 @@ const TaskForm: React.FC = () => {
               {editing ? 'Edit Task' : 'Add Task'}
             </h2>
           </motion.div>
-          {error && (
+          {(error || localError) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Alert variant="danger">{error}</Alert>
+              <Alert variant="danger">{error || localError}</Alert>
             </motion.div>
           )}
           <Form onSubmit={handleSubmit} autoComplete="off">
