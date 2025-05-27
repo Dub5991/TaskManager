@@ -39,12 +39,26 @@ const luxuryColors = {
   glass: 'rgba(255,255,255,0.10)',
 };
 
+const WIDGETS_STORAGE_KEY = 'dashboardWidgets';
+
 const defaultWidgets = {
   analytics: true,
   pomodoro: true,
   milestones: true,
   showCustomizer: false,
 };
+
+function loadWidgets() {
+  try {
+    const stored = localStorage.getItem(WIDGETS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return defaultWidgets;
+}
+
+function saveWidgets(widgets: typeof defaultWidgets) {
+  localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(widgets));
+}
 
 // --- Achievements logic for dashboard milestone progress ---
 function getStreak(tasks: any[], days: number) {
@@ -204,10 +218,11 @@ const achievementDefs = [
 const Dashboard: React.FC = () => {
   const { tasks, add, remove, update, loading, error } = useTaskContext();
   const [category, setCategory] = useState('');
-  const [widgets, setWidgets] = useState(defaultWidgets);
+  const [widgets, setWidgets] = useState(() => loadWidgets());
   const [search, setSearch] = useState('');
   const [notifications, setNotifications] = useState<string[]>([]);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [customizerSaving, setCustomizerSaving] = useState(false);
   const navigate = useNavigate();
 
   const categories = useMemo(
@@ -259,6 +274,23 @@ const Dashboard: React.FC = () => {
   const handleBellClick = () => {
     setNotifications([]);
     toast('You have checked your notifications!');
+  };
+
+  // Save widgets to localStorage and close customizer
+  const handleCustomizerSave = () => {
+    setCustomizerSaving(true);
+    setTimeout(() => {
+      saveWidgets({ ...widgets, showCustomizer: false });
+      setWidgets(w => ({ ...w, showCustomizer: false }));
+      setCustomizerSaving(false);
+      toast.success('Dashboard updated!');
+    }, 400);
+  };
+
+  // Close customizer without saving
+  const handleCustomizerClose = () => {
+    setWidgets(loadWidgets());
+    setWidgets(w => ({ ...w, showCustomizer: false }));
   };
 
   // --- Floating Card Layout for Dashboard Panels ---
@@ -317,7 +349,7 @@ const Dashboard: React.FC = () => {
                   size="sm"
                   className="rounded-circle ms-2"
                   style={{ borderWidth: 2 }}
-                  onClick={() => setWidgets(w => ({ ...w, showCustomizer: !w.showCustomizer }))}
+                  onClick={() => setWidgets(w => ({ ...w, showCustomizer: true }))}
                 >
                   <IconSettings size={20} />
                 </Button>
@@ -420,80 +452,86 @@ const Dashboard: React.FC = () => {
                 </Card>
               </motion.div>
               {/* Analytics Card */}
-              <motion.div
-                layout
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                variants={panelVariants}
-                transition={{ duration: 0.5, delay: 0.1, type: 'spring' }}
-                style={{
-                  borderRadius: 22,
-                  boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
-                  background: luxuryColors.glass,
-                  border: `1.5px solid ${luxuryColors.border}`,
-                }}
-              >
-                <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
-                  <Card.Body>
-                    <div className="d-flex align-items-center mb-2">
-                      <IconTrophy size={22} color="#FFD700" className="me-2" />
-                      <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Analytics</span>
-                    </div>
-                    <AnalyticsCharts tasks={tasks} />
-                  </Card.Body>
-                </Card>
-              </motion.div>
+              {widgets.analytics && (
+                <motion.div
+                  layout
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={panelVariants}
+                  transition={{ duration: 0.5, delay: 0.1, type: 'spring' }}
+                  style={{
+                    borderRadius: 22,
+                    boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
+                    background: luxuryColors.glass,
+                    border: `1.5px solid ${luxuryColors.border}`,
+                  }}
+                >
+                  <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
+                    <Card.Body>
+                      <div className="d-flex align-items-center mb-2">
+                        <IconTrophy size={22} color="#FFD700" className="me-2" />
+                        <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Analytics</span>
+                      </div>
+                      <AnalyticsCharts tasks={tasks} />
+                    </Card.Body>
+                  </Card>
+                </motion.div>
+              )}
               {/* Pomodoro Card */}
-              <motion.div
-                layout
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                variants={panelVariants}
-                transition={{ duration: 0.5, delay: 0.15, type: 'spring' }}
-                style={{
-                  borderRadius: 22,
-                  boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
-                  background: luxuryColors.glass,
-                  border: `1.5px solid ${luxuryColors.border}`,
-                }}
-              >
-                <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
-                  <Card.Body>
-                    <div className="d-flex align-items-center mb-2">
-                      <IconBell size={22} color="#fd7e14" className="me-2" />
-                      <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Pomodoro Timer</span>
-                    </div>
-                    <PomodoroTimer />
-                  </Card.Body>
-                </Card>
-              </motion.div>
+              {widgets.pomodoro && (
+                <motion.div
+                  layout
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={panelVariants}
+                  transition={{ duration: 0.5, delay: 0.15, type: 'spring' }}
+                  style={{
+                    borderRadius: 22,
+                    boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
+                    background: luxuryColors.glass,
+                    border: `1.5px solid ${luxuryColors.border}`,
+                  }}
+                >
+                  <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
+                    <Card.Body>
+                      <div className="d-flex align-items-center mb-2">
+                        <IconBell size={22} color="#fd7e14" className="me-2" />
+                        <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Pomodoro Timer</span>
+                      </div>
+                      <PomodoroTimer />
+                    </Card.Body>
+                  </Card>
+                </motion.div>
+              )}
               {/* Milestones Card */}
-              <motion.div
-                layout
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                variants={panelVariants}
-                transition={{ duration: 0.5, delay: 0.2, type: 'spring' }}
-                style={{
-                  borderRadius: 22,
-                  boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
-                  background: luxuryColors.glass,
-                  border: `1.5px solid ${luxuryColors.border}`,
-                }}
-              >
-                <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
-                  <Card.Body>
-                    <div className="d-flex align-items-center mb-2">
-                      <IconTrophy size={22} color="#339af0" className="me-2" />
-                      <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Milestones</span>
-                    </div>
-                    <MilestoneProgress milestones={achievementMilestones} />
-                  </Card.Body>
-                </Card>
-              </motion.div>
+              {widgets.milestones && (
+                <motion.div
+                  layout
+                  initial="hidden"
+                  animate="visible"
+                  exit="hidden"
+                  variants={panelVariants}
+                  transition={{ duration: 0.5, delay: 0.2, type: 'spring' }}
+                  style={{
+                    borderRadius: 22,
+                    boxShadow: '0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 8px 0 #232946',
+                    background: luxuryColors.glass,
+                    border: `1.5px solid ${luxuryColors.border}`,
+                  }}
+                >
+                  <Card className="border-0 bg-transparent" style={{ borderRadius: 22 }}>
+                    <Card.Body>
+                      <div className="d-flex align-items-center mb-2">
+                        <IconTrophy size={22} color="#339af0" className="me-2" />
+                        <span style={{ fontWeight: 700, color: luxuryColors.accent }}>Milestones</span>
+                      </div>
+                      <MilestoneProgress milestones={achievementMilestones} />
+                    </Card.Body>
+                  </Card>
+                </motion.div>
+              )}
               {/* Gamification Card */}
               <motion.div
                 layout
@@ -543,7 +581,7 @@ const Dashboard: React.FC = () => {
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            onClick={() => setWidgets(w => ({ ...w, showCustomizer: false }))}
+            onClick={handleCustomizerClose}
           >
             <motion.div
               initial={{ scale: 0.96 }}
@@ -564,6 +602,9 @@ const Dashboard: React.FC = () => {
               <DashboardCustomizer
                 visible={widgets}
                 onChange={(key: string, show: boolean) => setWidgets((w: typeof widgets) => ({ ...w, [key]: show }))}
+                onSave={handleCustomizerSave}
+                onClose={handleCustomizerClose}
+                isSaving={customizerSaving}
               />
             </motion.div>
           </motion.div>
