@@ -1,4 +1,4 @@
-import React from 'react';
+// NotificationBell.tsx - Notification Bell Icon with Badge
 import { OverlayTrigger, Tooltip, Badge } from 'react-bootstrap';
 import { BsBell } from 'react-icons/bs';
 
@@ -7,6 +7,7 @@ interface NotificationBellProps {
   onClick: () => void;
 }
 
+// Bell icon with badge for notifications
 function NotificationBell({ count, onClick }: NotificationBellProps) {
   return (
     <OverlayTrigger

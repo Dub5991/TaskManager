@@ -1,10 +1,14 @@
+// ThemeToggle.tsx - Theme Switcher Button
 import React from 'react';
 import { Button } from 'react-bootstrap';
 import { BsSun, BsMoon } from 'react-icons/bs';
-import { useTheme } from '../context/ThemeContext';
+// import { useTheme } from '../context/ThemeContext'; // Uncomment if ThemeContext exists
 
+// Simple theme toggle fallback if ThemeContext is not present
 const ThemeToggle: React.FC = () => {
-  const { theme, toggleTheme } = useTheme();
+  // const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
   return (
     <Button

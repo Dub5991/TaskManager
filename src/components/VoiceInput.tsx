@@ -1,3 +1,4 @@
+// VoiceInput.tsx - Voice to Text Input Component
 import React, { useRef } from 'react';
 import { Button, Form } from 'react-bootstrap';
 
@@ -5,11 +6,14 @@ interface VoiceInputProps {
   onResult: (text: string) => void;
 }
 
-const VoiceInput: React.FC<VoiceInputProps> = ({ onResult }) => {
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+// Use 'any' for SpeechRecognition to avoid TS errors if types are missing
+const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
+const VoiceInput: React.FC<VoiceInputProps> = ({ onResult }) => {
+  const recognitionRef = useRef<any>(null);
+
+  // Start voice recognition and handle result
   const handleStart = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return alert('Speech recognition not supported');
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.lang = 'en-US';

@@ -11,6 +11,8 @@ export interface Task {
   labels?: string[];
   subtasks?: Subtask[];
   comments?: Comment[];
+  attachments?: File[]; // <-- Add this
+  recurring?: string;   // <-- Add this
 }
 
 export interface Subtask {

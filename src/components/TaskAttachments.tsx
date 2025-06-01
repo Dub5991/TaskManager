@@ -12,7 +12,8 @@ const TaskAttachments: React.FC<TaskAttachmentsProps> = ({ files, onAdd, onRemov
     <Form.Control
       type="file"
       onChange={e => {
-        if (e.target.files && e.target.files[0]) onAdd(e.target.files[0]);
+        const input = e.target as HTMLInputElement;
+        if (input.files && input.files[0]) onAdd(input.files[0]);
       }}
       className="mb-2"
     />

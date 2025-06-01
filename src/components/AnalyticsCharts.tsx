@@ -1,3 +1,4 @@
+// AnalyticsCharts.tsx - Task Analytics Charts
 import React from 'react';
 import { Card } from 'react-bootstrap';
 import { Bar, Pie } from 'react-chartjs-2';
@@ -30,10 +31,12 @@ interface AnalyticsChartsProps {
 }
 
 const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ tasks }) => {
+  // Calculate completed and pending tasks
   const completed = tasks.filter(t => t.completed).length;
   const pending = tasks.length - completed;
   const categories = Array.from(new Set(tasks.map(t => t.category).filter(Boolean)));
 
+  // Pie chart data for completion
   const pieData = {
     labels: ['Completed', 'Pending'],
     datasets: [
@@ -45,6 +48,7 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ tasks }) => {
     ],
   };
 
+  // Bar chart data for categories
   const barData = {
     labels: categories,
     datasets: [
@@ -57,15 +61,24 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ tasks }) => {
     ],
   };
 
+  // Pie chart options (fix legend position type)
   const pieOptions = {
     plugins: {
-      legend: { display: true, position: 'bottom' },
-      title: { display: true, text: 'Completion Ratio', font: { size: 16 } },
+      legend: {
+        display: true,
+        position: "bottom" as const, // TypeScript expects a string literal
+      },
+      title: {
+        display: true,
+        text: 'Task Completion',
+        font: { size: 18 },
+      },
     },
     animation: { animateScale: true },
     maintainAspectRatio: false,
   };
 
+  // Bar chart options
   const barOptions = {
     plugins: {
       legend: { display: false },
@@ -83,12 +96,18 @@ const AnalyticsCharts: React.FC<AnalyticsChartsProps> = ({ tasks }) => {
     <Card className="mb-4">
       <Card.Header as="h5">Your Progress</Card.Header>
       <Card.Body>
-        <div className="mb-4" style={{ maxWidth: 350, height: 250 }}>
-          <Pie data={pieData} options={pieOptions} />
-        </div>
-        <div style={{ maxWidth: 500, height: 300 }}>
-          <Bar data={barData} options={barOptions} />
-        </div>
+        {tasks.length === 0 ? (
+          <div className="text-center text-muted">No tasks to display analytics.</div>
+        ) : (
+          <>
+            <div className="mb-4" style={{ maxWidth: 350, height: 250 }}>
+              <Pie data={pieData} options={pieOptions} />
+            </div>
+            <div style={{ maxWidth: 500, height: 300 }}>
+              <Bar data={barData} options={barOptions} />
+            </div>
+          </>
+        )}
       </Card.Body>
     </Card>
   );

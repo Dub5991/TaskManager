@@ -9,9 +9,10 @@ import Notes from './pages/Notes';
 import AppNavbar from './components/Navbar';
 import { useAuth0 } from '@auth0/auth0-react';
 import './index.css';
+import type { ReactNode } from 'react';
 
 // ProtectedRoute component to require authentication
-function ProtectedRoute({ children }: { children: JSX.Element }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth0();
   if (isLoading) {
     return (
@@ -44,7 +45,7 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
       </div>
     );
   }
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function App() {

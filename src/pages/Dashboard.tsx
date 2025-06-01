@@ -195,7 +195,7 @@ const achievementDefs = [
     id: 13,
     title: 'Recurring Hero',
     description: 'Create a recurring task.',
-    check: (tasks: any[]) => tasks.some(t => t.recurring === true),
+    check: (tasks: any[]) => tasks.some(t => t.recurring),
   },
   {
     id: 14,
@@ -238,7 +238,7 @@ const Dashboard: React.FC = () => {
         t =>
           t.title.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
-          (t.labels && t.labels.some(l => l.toLowerCase().includes(q))) ||
+          (t.labels && t.labels.some((l: string) => l.toLowerCase().includes(q))) ||
           (t.category && t.category.toLowerCase().includes(q))
       );
     }
@@ -281,7 +281,7 @@ const Dashboard: React.FC = () => {
     setCustomizerSaving(true);
     setTimeout(() => {
       saveWidgets({ ...widgets, showCustomizer: false });
-      setWidgets(w => ({ ...w, showCustomizer: false }));
+      setWidgets((w: typeof widgets) => ({ ...w, showCustomizer: false }));
       setCustomizerSaving(false);
       toast.success('Dashboard updated!');
     }, 400);
@@ -290,7 +290,7 @@ const Dashboard: React.FC = () => {
   // Close customizer without saving
   const handleCustomizerClose = () => {
     setWidgets(loadWidgets());
-    setWidgets(w => ({ ...w, showCustomizer: false }));
+    setWidgets((w: typeof widgets) => ({ ...w, showCustomizer: false }));
   };
 
   // --- Floating Card Layout for Dashboard Panels ---
@@ -349,7 +349,7 @@ const Dashboard: React.FC = () => {
                   size="sm"
                   className="rounded-circle ms-2"
                   style={{ borderWidth: 2 }}
-                  onClick={() => setWidgets(w => ({ ...w, showCustomizer: true }))}
+                  onClick={() => setWidgets((w: typeof widgets) => ({ ...w, showCustomizer: true }))}
                 >
                   <IconSettings size={20} />
                 </Button>

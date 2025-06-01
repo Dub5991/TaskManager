@@ -38,8 +38,11 @@ const defaultWidth = 600;
 const JournalPage: React.FC<Props> = ({ pageId, sectionId }) => {
   const [data, setData] = useState<JournalData>({ text: '', mood: 'happy', mediaUrl: '', width: defaultWidth });
   const [showSaved, setShowSaved] = useState(false);
-  const saveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeout = useRef<number | null>(null);
   const [entries, setEntries] = useState<{ id: string; name: string }[]>([]);
+
+  // Helper for default data
+  const defaultData = (): JournalData => ({ text: '', mood: 'happy', mediaUrl: '', width: defaultWidth });
 
   // Load data on mount/page change
   useEffect(() => {
@@ -69,10 +72,8 @@ const JournalPage: React.FC<Props> = ({ pageId, sectionId }) => {
     localStorage.setItem(JOURNAL_KEY, JSON.stringify(all));
     setShowSaved(true);
     if (saveTimeout.current) clearTimeout(saveTimeout.current);
-    saveTimeout.current = setTimeout(() => setShowSaved(false), 1200);
+    saveTimeout.current = window.setTimeout(() => setShowSaved(false), 1200);
   };
-
-  const defaultData = () => ({ text: '', mood: 'happy', mediaUrl: '', width: defaultWidth });
 
   return (
     <motion.div

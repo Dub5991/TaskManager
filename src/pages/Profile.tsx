@@ -1,9 +1,10 @@
-import React, { useMemo, useState, useEffect, ChangeEvent } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useTaskContext } from '../context/TaskContext';
 import GamificationPanel from '../components/GamificationPanel';
 import { Card, Badge, ProgressBar, Row, Col, Button, Container, Form, Modal } from 'react-bootstrap';
-import { FaUserCircle, FaEnvelope, FaSignOutAlt, FaTasks, FaTrophy, FaClock, FaFire, FaEdit, FaSave, FaTimes, FaUpload } from 'react-icons/fa';
+import { FaUserCircle, FaEnvelope, FaSignOutAlt, FaTasks, FaTrophy, FaClock, FaFire, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 
 function daysBetween(a: string, b: string) {
   return Math.floor((new Date(a).getTime() - new Date(b).getTime()) / (1000 * 60 * 60 * 24));
@@ -59,7 +60,6 @@ const Profile: React.FC = () => {
       }
       setEditName(user.name || '');
     }
-    // eslint-disable-next-line
   }, [user?.email, user?.picture, user?.name]);
 
   const {

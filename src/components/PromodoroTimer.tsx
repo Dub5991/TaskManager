@@ -15,7 +15,7 @@ const PomodoroTimer: React.FC = () => {
   const [cycles, setCycles] = useState(0);
   const [showBreak, setShowBreak] = useState(false);
   const [quote, setQuote] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<number | null>(null);
 
   // Fetch a motivational quote from a public API
   useEffect(() => {
@@ -28,7 +28,7 @@ const PomodoroTimer: React.FC = () => {
   // Timer logic
   useEffect(() => {
     if (running && seconds > 0) {
-      intervalRef.current = setInterval(() => setSeconds(s => s - 1), 1000);
+      intervalRef.current = window.setInterval(() => setSeconds(s => s - 1), 1000);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }

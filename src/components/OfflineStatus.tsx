@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+// OfflineStatus.tsx - Offline Notification Banner
+import { useEffect, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+// Shows a warning banner if the user is offline
 function OfflineStatus() {
   const [offline, setOffline] = useState(!navigator.onLine);
 
